@@ -7,6 +7,7 @@
 #library("VariantAnnotation")
 #library('GenomicFeatures')
 #library(BSgenome.Hsapiens.UCSC.hg19)
+#library(BSgenome.Hsapiens.UCSC.hg38)
 #library(signature.tools.lib)
 #library("glmnet")
 
@@ -79,14 +80,28 @@ GenCatalogue <- function(CTsubs, SampleCol){
 #' @return 96 channel catalogue for substitutions
 
 #' @export
-indel_classifier <- function(indels){
+indel_classifier <- function(indels, genome.v="hg38"){
   
   indel.data <- indels
   indel.data[indel.data$Chrom=="23","Chrom"]="X"
   indel.data[indel.data$Chrom=="24","Chrom"]="Y"
   
+ if(genome.v=="hg38"){
+    expected_chroms <- paste0("chr",c(seq(1:22),"X","Y"))
+    genomeSeq <- BSgenome.Hsapiens.UCSC.hg38::BSgenome.Hsapiens.UCSC.hg38
+  }else if(genome.v=="hg19"){
+    expected_chroms <- paste0(c(seq(1:22),"X","Y"))
+    genomeSeq <- BSgenome.Hsapiens.UCSC.hg19::BSgenome.Hsapiens.UCSC.hg19
+  }
+  
+  vcf_seqnames <- unique(indel.data$Chrom) 
+  if (genome.v=="hg38" ) {
+    if(length(intersect(vcf_seqnames,expected_chroms))==0) indel.data$Chrom <- paste0("chr",indel.data$Chrom)
+  }
+  indel.data <- indel.data[indel.data$Chrom %in% expected_chroms,]
+  
   # convert formats, and find context of the indels
-  indel.df <- prepare.indel.df.tab(indel.data)
+  indel.df <- prepare.indel.df.tab(indel.data, genome.v=genome.v)
   indel.df.max100 <- indel.df[indel.df$indel.length<=100 & indel.df$indel.length>0,]
   # indel classification
   indel.classified.df <- mh_indel_v2(indel.df.max100)
@@ -106,8 +121,17 @@ indel_classifier <- function(indels){
   
 }
 
-prepare.indel.df.tab <- function(indel.data) {
+prepare.indel.df.tab <- function(indel.data,genome.v) {
   
+  if(genome.v=="hg38"){
+    genome.assembly = BSgenome.Hsapiens.UCSC.hg38::BSgenome.Hsapiens.UCSC.hg38
+    chroms <- indel.data$Chrom
+    
+  }else if(genome.v=="hg19"){
+    genome.assembly = BSgenome.Hsapiens.UCSC.hg19::Hsapiens
+    chroms <- paste0('chr',indel.data$Chrom)
+  }
+    
   if (nrow(indel.data)>0) {
     
     
@@ -135,16 +159,16 @@ prepare.indel.df.tab <- function(indel.data) {
     indel.data$extend3 = indel.data$Pos+indel.data$indel.length + indel.data$indel.length+25;
     
     
-    indel.data$slice5 <- as.character(Biostrings::getSeq(BSgenome.Hsapiens.UCSC.hg19::Hsapiens, paste0('chr',indel.data$Chrom), indel.data$extend5, indel.data$Pos))
+    indel.data$slice5 <- as.character(Biostrings::getSeq(genome.assembly, chroms, indel.data$extend5, indel.data$Pos))
     indel.data$slice3 <- NULL
-    indel.data[indel.data$Type=="Del","slice3"] <- as.character(Biostrings::getSeq(BSgenome.Hsapiens.UCSC.hg19::Hsapiens, paste0('chr',indel.data[indel.data$Type=="Del","Chrom"]), indel.data[indel.data$Type=="Del","Pos"]+indel.data[indel.data$Type=="Del","indel.length"]+1, indel.data[indel.data$Type=="Del","extend3"]))
-    indel.data[indel.data$Type=="Ins","slice3"] <- as.character(Biostrings::getSeq(BSgenome.Hsapiens.UCSC.hg19::Hsapiens, paste0('chr',indel.data[indel.data$Type=="Ins","Chrom"]), indel.data[indel.data$Type=="Ins","Pos"]+1, indel.data[indel.data$Type=="Ins","extend3"]))
+    indel.data[indel.data$Type=="Del","slice3"] <- as.character(Biostrings::getSeq(genome.assembly, chroms[indel.data$Type=="Del"], indel.data[indel.data$Type=="Del","Pos"]+indel.data[indel.data$Type=="Del","indel.length"]+1, indel.data[indel.data$Type=="Del","extend3"]))
+    indel.data[indel.data$Type=="Ins","slice3"] <- as.character(Biostrings::getSeq(genome.assembly, chroms[indel.data$Type=="Ins"], indel.data[indel.data$Type=="Ins","Pos"]+1, indel.data[indel.data$Type=="Ins","extend3"]))
     
     # 1bp before and after change                     
-    indel.data$slice5_1bp <- as.character(Biostrings::getSeq(BSgenome.Hsapiens.UCSC.hg19::Hsapiens, paste0('chr',indel.data$Chrom), indel.data$Pos, indel.data$Pos))
+    indel.data$slice5_1bp <- as.character(Biostrings::getSeq(genome.assembly, chroms, indel.data$Pos, indel.data$Pos))
     indel.data$slice3_1bp <- NULL
-    indel.data[indel.data$Type=="Del","slice3_1bp"] <- as.character(Biostrings::getSeq(BSgenome.Hsapiens.UCSC.hg19::Hsapiens, paste0('chr',indel.data[indel.data$Type=="Del","Chrom"]), indel.data[indel.data$Type=="Del","Pos"]+indel.data[indel.data$Type=="Del","indel.length"]+1, indel.data[indel.data$Type=="Del","Pos"]+indel.data[indel.data$Type=="Del","indel.length"]+1))
-    indel.data[indel.data$Type=="Ins","slice3_1bp"] <- as.character(Biostrings::getSeq(BSgenome.Hsapiens.UCSC.hg19::Hsapiens, paste0('chr',indel.data[indel.data$Type=="Ins","Chrom"]), indel.data[indel.data$Type=="Ins","Pos"]+1, indel.data[indel.data$Type=="Ins","Pos"]+1))
+    indel.data[indel.data$Type=="Del","slice3_1bp"] <- as.character(Biostrings::getSeq(genome.assembly, chroms[indel.data$Type=="Del"], indel.data[indel.data$Type=="Del","Pos"]+indel.data[indel.data$Type=="Del","indel.length"]+1, indel.data[indel.data$Type=="Del","Pos"]+indel.data[indel.data$Type=="Del","indel.length"]+1))
+    indel.data[indel.data$Type=="Ins","slice3_1bp"] <- as.character(Biostrings::getSeq(genome.assembly, chroms[indel.data$Type=="Ins"], indel.data[indel.data$Type=="Ins","Pos"]+1, indel.data[indel.data$Type=="Ins","Pos"]+1))
     
    
     # Pyrimidine represnetation for 1bp indels
@@ -194,7 +218,7 @@ mh_indel_v2 <- function(indel.df) {
   slice3_nonrep_all <- rep (NA, nrow(indel.df))
   if (nrow(indel.df)>0) {
     for (i in 1:nrow(indel.df)) {
-      print(i)
+      #print(i)
       if (indel.df$Type[i]=='Del') { # the classification is only for deletions
         
         as = as.character(indel.df$change[i]) # The actual deletion

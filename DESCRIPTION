@@ -24,6 +24,7 @@ Imports:
     VariantAnnotation,
     GenomicFeatures,
     BSgenome.Hsapiens.UCSC.hg19,
+    BSgenome.Hsapiens.UCSC.hg38,
     Biostrings,
     signature.tools.lib,
     stats,
