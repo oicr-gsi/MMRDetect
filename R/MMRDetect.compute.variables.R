@@ -106,7 +106,7 @@ MMRDetect.compute.subcatalogue.exposure <- function(sub_cat, tissue_type,MMR_sub
   }
   
   a <- signature.tools.lib::SignatureFit_withBootstrap(mut_cat,sig_cat)
-  write.table(a$E_median_filtered,paste0("exposure_",tissue_type,".txt"),sep = "\t",row.names = T, col.names = T, quote = F)
+ # write.table(a$E_median_filtered,paste0("exposure_",tissue_type,".txt"),sep = "\t",row.names = T, col.names = T, quote = F)
   
   
   
@@ -126,7 +126,7 @@ MMRDetect.compute.subcatalogue.exposure <- function(sub_cat, tissue_type,MMR_sub
     MMRsig_sample_melt_dcast$MMR_sum <- rowSums(MMRsig_sample_melt_dcast[,-1])
     
   }
-  write.table(MMRsig_sample_melt_dcast,paste0("subsig_exposure_",tissue_type,".txt"),sep = "\t",row.names = F, col.names = T, quote = F)
+ # write.table(MMRsig_sample_melt_dcast,paste0("subsig_exposure_",tissue_type,".txt"),sep = "\t",row.names = F, col.names = T, quote = F)
   
   
   return(MMRsig_sample_melt_dcast) 
@@ -179,7 +179,7 @@ MMRDetect.compute.Repindel.similarity <- function(indels, tissue_type,MMR_sig_in
   
   MMRsig_2 <- merge(Del_rep_mean[,c("Sample","Del_rep_mean")],Ins_rep_mean[,c("Sample","Ins_rep_mean")],by="Sample")
   MMRsig_2 <- merge(Sample_MMR,MMRsig_2, by="Sample")
-  write.table(MMRsig_2,paste0("sample_feature_summary_",tissue_type,".txt"),sep="\t", col.names = T, row.names = F, quote = F)
+#  write.table(MMRsig_2,paste0("sample_feature_summary_",tissue_type,".txt"),sep="\t", col.names = T, row.names = F, quote = F)
   
   
   return(MMRsig_2) 
@@ -229,7 +229,7 @@ MMRDetect.compute.Repindelcatalogue.similarity <- function(indel_cat, tissue_typ
   MMRsig_2 <- merge(Del_rep_mean[,c("Sample","Del_rep_mean")],Ins_rep_mean[,c("Sample","Ins_rep_mean")],by="Sample")
   MMRsig_2 <- merge(Sample_MMR,MMRsig_2, by="Sample")
   
-  write.table(MMRsig_2,paste0("sample_feature_summary_",tissue_type,".txt"),sep="\t", col.names = T, row.names = F, quote = F)
+ # write.table(MMRsig_2,paste0("sample_feature_summary_",tissue_type,".txt"),sep="\t", col.names = T, row.names = F, quote = F)
   
   
   
@@ -338,7 +338,7 @@ MMRDetect.compute.variables <- function(sub_cat, indel_cat, tissue_type,MMR_subs
   
   MMRDetect_variables <- merge(sub_MMR_expo[,c("Sample","MMR_sum")],indel_similarity,by="Sample")
   MMRDetect_variables <- merge(MMRDetect_variables,sub_similiarity[,c("Sample","maxcossim")],by="Sample")
-  write.table(MMRDetect_variables,paste0("sample_feature_summary_",tissue_type,".txt"),sep="\t", col.names = T, row.names = F, quote = F)
+ # write.table(MMRDetect_variables,paste0("sample_feature_summary_",tissue_type,".txt"),sep="\t", col.names = T, row.names = F, quote = F)
   
   return(MMRDetect_variables) 
 }
