@@ -18,56 +18,6 @@
 #load("../data/PancanSig.rda")
 #MMRDclassifier <- readRDS("../data/MMRDetect.rds")
 
-#' Generate 96 channel catalogue for substitutions
-#'
-#' @param CTsubs A list of substitutions: Chrom, Pos, Ref, Alt, Sample column
-#' @param SampleCol Sample column
-#' @return 96 channel catalogue for substitutions
-#' @export
-GenCatalogue <- function(CTsubs, SampleCol){
-  
-  CTsubs[CTsubs$Chrom=="23","Chrom"]="X"
-  CTsubs[CTsubs$Chrom=="24","Chrom"]="Y"
-  
-  # add 5' and 3' base information 
-  CTsubs$pre_context <- as.character(Biostrings::getSeq(BSgenome.Hsapiens.UCSC.hg19::Hsapiens, paste0('chr',CTsubs$Chrom), CTsubs$Pos-1, CTsubs$Pos-1))
-  CTsubs$rear_context <- as.character(Biostrings::getSeq(BSgenome.Hsapiens.UCSC.hg19::Hsapiens, paste0('chr',CTsubs$Chrom), CTsubs$Pos+1, CTsubs$Pos+1))
-  
-  mutation <- c("C>A","C>G","C>T","T>A","T>C","T>G")
-  base <- c("A","C","G","T")
-  mutationtype <- NULL
-  for(i in 1:length(mutation)){
-    for(j in 1:length(base)){
-      for(k in 1:length(base)){
-        
-        mutationtype <- c(mutationtype,paste0(base[j],"[",mutation[i],"]",base[k]))
-      }
-    }
-    
-  }
-  
-  muttype_freq_template <- data.frame("MutationType"=mutationtype)
- # muttype_freq_template$Mutation <- substr(muttype_freq_template$MutationType,3,5)
-  #read.table("./MutationType_template.txt", sep = "\t", header = T, as.is = T)
-  
-  CTsubs_copy <- CTsubs
-  CTsubs[CTsubs$Ref %in% c("G","A"),]$Alt <- as.character(Biostrings::complement(Biostrings::DNAStringSet(CTsubs_copy[CTsubs_copy$Ref %in% c("G","A"),]$Alt)))
-  CTsubs[CTsubs$Ref %in% c("G","A"),]$pre_context <- as.character(Biostrings::complement(Biostrings::DNAStringSet(CTsubs_copy[CTsubs_copy$Ref %in% c("G","A"),]$rear_context)))
-  CTsubs[CTsubs$Ref %in% c("G","A"),]$rear_context <- as.character(Biostrings::complement(Biostrings::DNAStringSet(CTsubs_copy[CTsubs_copy$Ref %in% c("G","A"),]$pre_context)))
-  CTsubs[CTsubs$Ref %in% c("G","A"),]$Ref <- as.character(Biostrings::complement(Biostrings::DNAStringSet(CTsubs_copy[CTsubs_copy$Ref %in% c("G","A"),]$Ref)))
-  CTsubs$MutationType <- paste0(CTsubs$pre_context,"[",CTsubs$Ref,">",CTsubs$Alt,"]",CTsubs$rear_context)
-  sigfile_freq <- data.frame(table(CTsubs[,SampleCol],CTsubs$MutationType))
-  names(sigfile_freq) <- c("Sample","MutationType","Freq")
-  control_sigset <-reshape2::dcast(sigfile_freq,MutationType~Sample,value.var = "Freq")
-  control_sigset <- merge(muttype_freq_template,control_sigset,by="MutationType",all.x=T)
-  control_sigset[is.na(control_sigset)] <- 0
-  
-  #  write.table(muttype_freq,"muttype_freq.txt", sep="\t", row.names=F, col.names=T, quote=F)
-  return(control_sigset)
-  
-}
-
-
 ##########################
 #
 #  Indel classification
@@ -80,7 +30,7 @@ GenCatalogue <- function(CTsubs, SampleCol){
 #' @return 96 channel catalogue for substitutions
 
 #' @export
-indel_classifier <- function(indels, genome.v="hg38"){
+MSI_indel_classifier <- function(indels, genome.v){
   
   indel.data <- indels
   indel.data[indel.data$Chrom=="23","Chrom"]="X"
@@ -591,7 +541,7 @@ finalcaller <- function(mhcount, replength, rept) {
 #' @return Indel catalogue
 
 #' @export
-gen_indelmuttype_MMRD <- function(muts_list, Sample_col, muttype_col){
+gen_indelmuttype_MMRD <- function(muts_list,  Sample_col="Sample",muttype_col="indeltype_short"){
   indel_template <- indelsig_template
   indel_template_uniq <- unique(indel_template[,c(muttype_col,"type")])
   names(indel_template_uniq) <- c("indelsubtype","type")
